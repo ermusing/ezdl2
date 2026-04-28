@@ -2,10 +2,19 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import io
 import json
 import sys
 
+from urllib.parse import urlparse
+
 from . import fetch
+
+
+def _normalize_url(url: str) -> str:
+    if not urlparse(url).scheme:
+        return "https://" + url
+    return url
 
 
 def _die(message: str) -> None:
@@ -14,7 +23,7 @@ def _die(message: str) -> None:
 
 
 def _result_for(url: str):
-    result = fetch(url)
+    result = fetch(_normalize_url(url))
     if not result.ok:
         print(
             f"warning: fetch did not fully succeed (signals: {', '.join(result.failure_signals)})",
@@ -108,6 +117,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     parser = _build_parser()
     args = parser.parse_args()
     try:
