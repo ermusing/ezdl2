@@ -16,6 +16,9 @@ dependencies = [
     "markdownify>=0.13",
 ]
 
+[project.scripts]
+ezdl2 = "ezdl2.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
