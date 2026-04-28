@@ -6,9 +6,10 @@ from functools import cached_property
 from bs4 import BeautifulSoup
 
 from .browser_fetch import browser_fetch
-from .content import extract_main_content
+from .content import extract_main_content, to_markdown
 from .heuristics import is_failure
 from .http_fetch import http_fetch
+from .metadata import PageMetadata, extract_metadata
 
 
 @dataclass
@@ -24,8 +25,16 @@ class FetchResult:
         return BeautifulSoup(self.html, "lxml")
 
     @cached_property
+    def metadata(self) -> PageMetadata:
+        return extract_metadata(self.soup, self.url)
+
+    @cached_property
     def content(self) -> str:
-        return extract_main_content(self.soup)
+        return extract_main_content(self.soup, base_url=self.url)
+
+    @cached_property
+    def markdown(self) -> str:
+        return to_markdown(self.content)
 
 
 def fetch(url: str) -> FetchResult:
@@ -59,3 +68,7 @@ def fetch_soup(url: str) -> BeautifulSoup:
 
 def fetch_content(url: str) -> str:
     return fetch(url).content
+
+
+def fetch_markdown(url: str) -> str:
+    return fetch(url).markdown
