@@ -37,18 +37,19 @@ class FetchResult:
         return to_markdown(self.content)
 
 
-def fetch(url: str) -> FetchResult:
-    response = http_fetch(url)
-    failed, signals = is_failure(response)
+def fetch(url: str, *, force_browser: bool = False) -> FetchResult:
+    if not force_browser:
+        response = http_fetch(url)
+        failed, signals = is_failure(response)
 
-    if not failed:
-        return FetchResult(
-            html=response.html,
-            url=response.final_url,
-            method="http",
-            ok=True,
-            failure_signals=[],
-        )
+        if not failed:
+            return FetchResult(
+                html=response.html,
+                url=response.final_url,
+                method="http",
+                ok=True,
+                failure_signals=[],
+            )
 
     browser_response = browser_fetch(url)
     browser_failed, browser_signals = is_failure(browser_response)
@@ -62,13 +63,13 @@ def fetch(url: str) -> FetchResult:
     )
 
 
-def fetch_soup(url: str) -> BeautifulSoup:
-    return fetch(url).soup
+def fetch_soup(url: str, *, force_browser: bool = False) -> BeautifulSoup:
+    return fetch(url, force_browser=force_browser).soup
 
 
-def fetch_content(url: str) -> str:
-    return fetch(url).content
+def fetch_content(url: str, *, force_browser: bool = False) -> str:
+    return fetch(url, force_browser=force_browser).content
 
 
-def fetch_markdown(url: str) -> str:
-    return fetch(url).markdown
+def fetch_markdown(url: str, *, force_browser: bool = False) -> str:
+    return fetch(url, force_browser=force_browser).markdown

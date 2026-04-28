@@ -20,7 +20,7 @@ async def _do_browser_fetch(url: str) -> RawResponse:
         page = await context.new_page()
         await stealth.apply_stealth_async(page)
         try:
-            response = await page.goto(url, wait_until="networkidle", timeout=30_000)
+            response = await page.goto(url, wait_until="domcontentloaded", timeout=60_000)
             html = await page.content()
             final_url = page.url
             status = response.status if response else None
