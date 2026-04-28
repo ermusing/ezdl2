@@ -6,6 +6,7 @@ from functools import cached_property
 from bs4 import BeautifulSoup
 
 from .browser_fetch import browser_fetch
+from .content import extract_main_content
 from .heuristics import is_failure
 from .http_fetch import http_fetch
 
@@ -21,6 +22,10 @@ class FetchResult:
     @cached_property
     def soup(self) -> BeautifulSoup:
         return BeautifulSoup(self.html, "lxml")
+
+    @cached_property
+    def content(self) -> str:
+        return extract_main_content(self.soup)
 
 
 def fetch(url: str) -> FetchResult:
@@ -50,3 +55,7 @@ def fetch(url: str) -> FetchResult:
 
 def fetch_soup(url: str) -> BeautifulSoup:
     return fetch(url).soup
+
+
+def fetch_content(url: str) -> str:
+    return fetch(url).content
