@@ -15,10 +15,12 @@ dependencies = [
     "lxml>=5.0",
     "markdownify>=0.13",
     "brotli>=1.0",
+    "fastmcp>=2.0",
 ]
 
 [project.scripts]
 ezdl2 = "ezdl2.cli:main"
+ezdl2-mcp = "ezdl2.mcp_server:main"
 
 [project.optional-dependencies]
 dev = [
