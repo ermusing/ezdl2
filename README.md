@@ -73,6 +73,58 @@ ezdl2 fetch https://example.com --include-html
 ezdl2 fetch https://example.com --include-content
 ```
 
+## MCP Server
+
+ezdl2 ships an [MCP](https://modelcontextprotocol.io/) server so AI assistants (Claude, Cursor, etc.) can fetch web pages as a tool call.
+
+### Tools exposed
+
+| Tool | Description |
+|---|---|
+| `web_fetch` | Fetch a page and return clean markdown (+ URL, title, method) |
+| `web_fetch_light_html` | Fetch a page and return extracted main-content HTML |
+| `web_fetch_raw_html` | Fetch a page and return the raw HTML |
+
+All three tools accept:
+- `url` — the page to fetch
+- `force_browser` *(optional, default `false`)* — skip the HTTP stage and go straight to headless Chromium
+
+### Starting the server
+
+```bash
+ezdl2-mcp
+```
+
+The server speaks the MCP stdio protocol and is installed as the `ezdl2-mcp` script when you `pip install ezdl2`.
+
+### Connecting to Claude Code / Claude Desktop
+
+Add the server to your `.mcp.json` (project-level) or `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ezdl2": {
+      "type": "stdio",
+      "command": "ezdl2-mcp"
+    }
+  }
+}
+```
+
+If you are using a virtual environment, point `command` at the venv script instead:
+
+```json
+{
+  "mcpServers": {
+    "ezdl2": {
+      "type": "stdio",
+      "command": ".venv/Scripts/ezdl2-mcp"
+    }
+  }
+}
+```
+
 ## Development
 
 ```bash
