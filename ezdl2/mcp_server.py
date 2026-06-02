@@ -68,6 +68,9 @@ def web_fetch_to_file(
       - html:     full raw HTML
       - raw:      unmodified HTTP response bytes (ignores force_browser)
     """
+    if mode not in ["markdown", "html", "content"]:
+        return f"Invalid mode: {mode}. Must be one of 'markdown', 'html', 'content', or 'raw'."
+
     if mode == "raw":
         resp = raw_download(url)
         with open(output_path, "wb") as f:
@@ -76,14 +79,21 @@ def web_fetch_to_file(
         return f"Saved raw bytes to {output_path}"
 
     result = fetch(url, force_browser=force_browser)
-    content_map = {
-        "markdown": result.markdown,
-        "html": result.html,
-        "content": result.content,
-    }
+    if not result.ok:
+        return f"Failed to fetch {url}. Signals: {result.failure_signals}"
+    
+    if mode == "markdown":
+        content = result.markdown
+    elif mode == "html":
+        content = result.html
+    elif mode == "content":        
+        content = result.content
+    else:
+        return f"Invalid mode: {mode}. Must be one of 'markdown', 'html', 'content', or 'raw'."
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write(content_map[mode])
-    return f"Saved {mode} ({len(content_map[mode])} chars) from {result.url} to {output_path}"
+        f.write(content)
+    
+    return f"Saved {mode} ({len(content)} chars) from {result.url} to {output_path}"
 
 
 def main() -> None:

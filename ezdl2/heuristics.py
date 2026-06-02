@@ -13,7 +13,16 @@ _LOGIN_URL_PATTERNS = re.compile(
 )
 
 _TITLE_FAILURE_RE = re.compile(
-    r"access.?denied|bot.?detect|captcha|verify.?you|are.?you.?human|just.?a.?moment|security.?check",
+    r"access.?denied|bot.?detect|captcha|verify.?you|are.?you.?human|just.?a.?moment|security.?check"
+    r"|attention.?required|checking.?your.?browser|please.?wait",
+    re.IGNORECASE,
+)
+
+_BODY_CHALLENGE_RE = re.compile(
+    r"checking your browser|enable javascript (and|&amp;|&) cookies"
+    r"|not automatically redirected after \d+ seconds"
+    r"|ddos.{0,10}protection|you have been blocked"
+    r"|please wait while we (verify|check)|ray id[:\s]+[0-9a-f]+",
     re.IGNORECASE,
 )
 
@@ -53,6 +62,11 @@ def is_failure(response: RawResponse) -> tuple[bool, list[str]]:
     title = _extract_title(html)
     if title and _TITLE_FAILURE_RE.search(title):
         signals.append("suspicious_title")
+        score += 8
+
+    stripped = re.sub(r"<[^>]+>", " ", html)
+    if _BODY_CHALLENGE_RE.search(stripped):
+        signals.append("body_challenge")
         score += 8
 
     for marker in _CAPTCHA_MARKERS:
