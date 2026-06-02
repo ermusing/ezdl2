@@ -9,6 +9,8 @@ import sys
 from urllib.parse import urlparse
 
 from . import fetch
+from .browser_fetch import browser_fetch
+from .http_fetch import raw_download
 
 
 def _normalize_url(url: str) -> str:
@@ -20,6 +22,14 @@ def _normalize_url(url: str) -> str:
 def _die(message: str) -> None:
     print(f"error: {message}", file=sys.stderr)
     sys.exit(1)
+
+
+def _output(args: argparse.Namespace, text: str) -> None:
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(text)
+    else:
+        print(text)
 
 
 def _result_for(args: argparse.Namespace):
@@ -35,20 +45,43 @@ def _result_for(args: argparse.Namespace):
 # --- subcommand handlers ---
 
 def _cmd_html(args: argparse.Namespace) -> None:
-    print(_result_for(args).html)
+    _output(args, _result_for(args).html)
 
 
 def _cmd_content(args: argparse.Namespace) -> None:
-    print(_result_for(args).content)
+    _output(args, _result_for(args).content)
 
 
 def _cmd_markdown(args: argparse.Namespace) -> None:
-    print(_result_for(args).markdown)
+    _output(args, _result_for(args).markdown)
 
 
 def _cmd_metadata(args: argparse.Namespace) -> None:
     result = _result_for(args)
-    print(json.dumps(dataclasses.asdict(result.metadata), indent=2, ensure_ascii=False))
+    _output(args, json.dumps(dataclasses.asdict(result.metadata), indent=2, ensure_ascii=False))
+
+
+def _cmd_download(args: argparse.Namespace) -> None:
+    url = _normalize_url(args.url)
+    if args.browser:
+        result = browser_fetch(url)
+        if result.error:
+            _die(result.error)
+        data = result.html.encode()
+        if args.output:
+            with open(args.output, "wb") as f:
+                f.write(data)
+        else:
+            sys.stdout.buffer.write(data)
+    else:
+        resp = raw_download(url)
+        if args.output:
+            with open(args.output, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=65536):
+                    f.write(chunk)
+        else:
+            for chunk in resp.iter_content(chunk_size=65536):
+                sys.stdout.buffer.write(chunk)
 
 
 def _cmd_fetch(args: argparse.Namespace) -> None:
@@ -65,7 +98,7 @@ def _cmd_fetch(args: argparse.Namespace) -> None:
         data["html"] = result.html
     if args.include_content:
         data["content"] = result.content
-    print(json.dumps(data, indent=2, ensure_ascii=False))
+    _output(args, json.dumps(data, indent=2, ensure_ascii=False))
 
 
 # --- parser ---
@@ -86,6 +119,13 @@ def _build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("url", help=url_help)
     common.add_argument("--browser", action="store_true", help=browser_help)
+    common.add_argument("-o", "--output", metavar="FILE", help="Write output to FILE instead of stdout")
+
+    p_download = sub.add_parser("download", help="Stream the raw HTTP response bytes with no modification")
+    p_download.add_argument("url", help=url_help)
+    p_download.add_argument("--browser", action="store_true", help="Use Playwright to render the page first, then download the DOM HTML")
+    p_download.add_argument("-o", "--output", metavar="FILE", help="Write to FILE instead of stdout")
+    p_download.set_defaults(func=_cmd_download)
 
     p_html = sub.add_parser("html", parents=[common], help="Print the raw fetched HTML")
     p_html.set_defaults(func=_cmd_html)

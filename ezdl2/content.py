@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -41,7 +42,24 @@ def extract_main_content(soup: BeautifulSoup, base_url: str | None = None) -> st
     if not main_content:
         main_content = soup.find("body")
 
-    return str(main_content) if main_content else str(soup)
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    footer = soup.new_tag("div", attrs={"class": "ezdl2-source"})
+    footer.append(soup.new_tag("hr"))
+    p = soup.new_tag("p")
+    if base_url:
+        p.append("Source: ")
+        a = soup.new_tag("a", href=base_url)
+        a.string = base_url
+        p.append(a)
+        p.append(f" — Fetched: {timestamp}")
+    else:
+        p.string = f"Fetched: {timestamp}"
+    footer.append(p)
+
+    if main_content:
+        main_content.append(footer)
+        return str(main_content)
+    return str(soup)
 
 
 def to_markdown(html: str) -> str:

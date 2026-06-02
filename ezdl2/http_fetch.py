@@ -17,6 +17,14 @@ class RawResponse:
     error: str | None = None
 
 
+def raw_download(url: str, chunk_size: int = 65536):
+    """Stream raw response bytes. Yields (headers, chunks_iter, final_url)."""
+    session = requests.Session()
+    resp = session.get(url, timeout=30, allow_redirects=True, stream=True)
+    resp.raise_for_status()
+    return resp
+
+
 def http_fetch(url: str) -> RawResponse:
     session = requests.Session()
     session.headers.update(get_headers())
