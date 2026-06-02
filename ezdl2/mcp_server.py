@@ -1,6 +1,9 @@
+from typing import Literal
+
 from fastmcp import FastMCP
 
 from ezdl2 import fetch
+from ezdl2.http_fetch import raw_download
 
 mcp = FastMCP(name="ezdl2")
 
@@ -47,6 +50,40 @@ def web_fetch_raw_html(url: str, force_browser: bool = False) -> str:
         result.html,
     ]
     return "\n".join(lines)
+
+
+@mcp.tool()
+def web_fetch_to_file(
+    url: str,
+    output_path: str,
+    mode: Literal["markdown", "html", "content", "raw"] = "markdown",
+    force_browser: bool = False,
+) -> str:
+    """Fetch a web page and save it to a file.
+
+    output_path MUST be an absolute path (e.g. /home/user/page.md or C:/Users/me/page.html).
+    mode controls what is saved:
+      - markdown: clean markdown (default)
+      - content:  extracted main-content HTML
+      - html:     full raw HTML
+      - raw:      unmodified HTTP response bytes (ignores force_browser)
+    """
+    if mode == "raw":
+        resp = raw_download(url)
+        with open(output_path, "wb") as f:
+            for chunk in resp.iter_content(chunk_size=65536):
+                f.write(chunk)
+        return f"Saved raw bytes to {output_path}"
+
+    result = fetch(url, force_browser=force_browser)
+    content_map = {
+        "markdown": result.markdown,
+        "html": result.html,
+        "content": result.content,
+    }
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(content_map[mode])
+    return f"Saved {mode} ({len(content_map[mode])} chars) from {result.url} to {output_path}"
 
 
 def main() -> None:
